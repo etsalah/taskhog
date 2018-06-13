@@ -15,14 +15,16 @@ def get_pagination_details(request_obj):
 
     params = get_json(request_obj)
 
-    return {
-        'id': params.get('id', ''),
-        'limit': int(params.get('limit', 20)),
-        'order': params.get('order', 'asc'),
-        'offset': int(params.get('offset', 0)),
-        'before_id': params.get('before_id', None),
-        'after_id': params.get('after_id', None)
+    result = {
+        'offset': params.get('offset', 0),
+        'limit': int(params.get('limit', 20))
     }
+
+    for field in ('fields', 'sort'):
+        if field in params:
+            result.update({field: params[field]})
+
+    return result
 
 
 def get_json(request_obj):

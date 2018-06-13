@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+"""This module contains the endpoints for interacting with users in the
+application"""
 from bottle import Bottle, request, response, json_dumps
-from helpers import param_helper
-from helpers import jwt_helper
-from helpers import route_helper
-from helpers import exception_helper
-from models.user import User
 
+from helpers import exception_helper
+from helpers import jwt_helper
+from helpers import param_helper
+from helpers import route_helper
+from models.user import User
 
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
@@ -17,13 +19,15 @@ route_helper.handle_options_call(app)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def index():
-    print("here")
-    print("data =>", request.data, "pagination => ", request.pagination)
-    return json_dumps(User().list(request.data, request.pagination))
+    return json_dumps(
+        User().list(request.pagination.get("fields", []), request.pagination))
 
 
 @app.get("/<user_id>")
 @app.get("/<user_id>/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
 def find(user_id):
     return json_dumps(User().find_by_id(user_id))
 
@@ -32,15 +36,16 @@ def find(user_id):
 def login():
     params = param_helper.get_json(request)
     token = None
-    find_args = {}
+
+    find_args = []
     if 'username' in params:
-        find_args['username'] = params['username']
+        find_args.append({'username': {"$eq": params['username']}})
 
     elif 'email' in params:
-        find_args['email'] = params['email']
+        find_args.append({'email': {"$eq": params['email']}})
 
     if 'password' in params:
-        find_args['password'] = params['password']
+        find_args.append({'password': {"$eq": params['password']}})
 
     result = User().find_by_params(find_args)
     if result:
@@ -63,6 +68,9 @@ def signup():
 
 @app.put("/<user_id>")
 @app.put("/<user_id>/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
 def update(user_id):
     params = param_helper.get_json(request)
     return json_dumps(User().update(user_id, params))
@@ -70,12 +78,18 @@ def update(user_id):
 
 @app.delete("/<user_id>")
 @app.delete("/<user_id>/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
 def delete(user_id):
     return json_dumps(User().delete(user_id))
 
 
 @app.get("/count")
 @app.get("/count/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
 def count():
     params = param_helper.get_json(request)
     return json_dumps(User().count(params))

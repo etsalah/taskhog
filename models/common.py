@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+"""This module contains a definition of the basic fields that all the models in
+the system and the crud operation that can be performed on these models"""
 from models.store import Store
 from typing import List, AnyStr, Dict
 from helpers import env_test
@@ -34,7 +36,7 @@ class CommonField:
     @staticmethod
     def sanitize_data(data):
         if 'token' in data:
-            del data
+            del data['token']
         return data
 
     @staticmethod
@@ -56,15 +58,16 @@ class CommonField:
         if self.is_test:
             return find_by_id(self.__tablename__, _id)
 
-    def find_by_params(self, params: Dict):
-        clean_data = CommonField.sanitize_data(params)
+    def find_by_params(self, params: List[Dict]):
+        # clean_data = CommonField.sanitize_data(params)
         if self.is_test:
-            return find_by_params(self.__tablename__, clean_data)
+            return find_by_params(self.__tablename__, params)
 
-    def list(self, params: Dict=None, pagination_args: Dict=None) -> List[Dict]:
-        clean_data = CommonField.sanitize_data(params)
+    def list(
+            self, params: List[Dict]=None,
+            pagination_args: Dict=None) -> List[Dict]:
         if self.is_test:
-            return list_objects(self.__tablename__, clean_data, pagination_args)
+            return list_objects(self.__tablename__, params, pagination_args)
 
     def delete(self, _id):
         if self.is_test:
@@ -92,7 +95,7 @@ def save(store_name: AnyStr, data: Dict):
 
 
 def update(store_name: AnyStr, _id: AnyStr, data: Dict):
-    result = get_db(store_name).update({'id': _id}, data)
+    result = get_db(store_name).update([{'id': {'$eq': _id}}], data)
     return result[0] if result else {}
 
 
@@ -100,20 +103,20 @@ def find_by_id(store_name: AnyStr, _id: AnyStr):
     return get_db(store_name).find_by_id(_id)
 
 
-def find_by_params(store_name: AnyStr, params: Dict):
+def find_by_params(store_name: AnyStr, params: List[Dict]):
     return get_db(store_name).find_by_params(params)
 
 
 def list_objects(
-        store_name: AnyStr, params: Dict,
+        store_name: AnyStr, params: List[Dict],
         pagination_args: Dict=None) -> List[Dict]:
     return get_db(store_name).list_objects(params, pagination_args)
 
 
 def delete(store_name: AnyStr, _id: AnyStr):
-    result = get_db(store_name).delete({"id": _id})
+    result = get_db(store_name).delete([{"id": {'$eq': _id}}])
     return result[0] if result else {}
 
 
-def count(store_name: AnyStr, params: Dict=None):
+def count(store_name: AnyStr, params: List[Dict]=None):
     return get_db(store_name).count_objects(params)
