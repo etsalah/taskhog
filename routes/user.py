@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """This module contains the endpoints for interacting with users in the
 application"""
+from copy import deepcopy
 from bottle import Bottle, request, response, json_dumps
 
 from helpers import exception_helper
@@ -20,7 +21,7 @@ route_helper.handle_options_call(app)
 @param_helper.handle_request_data(request)
 def index():
     return json_dumps(
-        User().list(request.pagination.get("fields", []), request.pagination))
+        User().list(request.pagination.get("filters", []), request.pagination))
 
 
 @app.get("/<user_id>")
@@ -49,6 +50,7 @@ def login():
 
     result = User().find_by_params(find_args)
     if result:
+        result = deepcopy(result)
         if 'password' in result:
             del result['password']
 
@@ -60,9 +62,11 @@ def login():
 
 
 @app.post("/create")
+@app.post("/create/")
+@exception_helper.handle_exception(response)
+@param_helper.handle_request_data(request)
 def signup():
-    params = param_helper.get_json(request)
-    result = User().save(params)
+    result = User().save(request.data)
     return result
 
 
@@ -72,8 +76,7 @@ def signup():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(user_id):
-    params = param_helper.get_json(request)
-    return json_dumps(User().update(user_id, params))
+    return json_dumps(User().update(user_id, request.data))
 
 
 @app.delete("/<user_id>")
@@ -91,8 +94,7 @@ def delete(user_id):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def count():
-    params = param_helper.get_json(request)
-    return json_dumps(User().count(params))
+    return json_dumps(User().count(request.pagination.get("filters", [])))
 
 
 @app.get("/decode")

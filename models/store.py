@@ -137,25 +137,26 @@ def _match_param(params: Dict, value: Dict) -> bool:
     for field in params:
         for operator in params[field].keys():
             operator_value = convert_if_date(params[field][operator])
+            field_value = value.get(field)
             if operator == "$eq":
-                return operator_value == value[field]
+                return operator_value == field_value
             elif operator == "$ne":
-                return operator_value != value[field]
+                return operator_value != field_value
             elif operator == "$lt":
-                return value[field] < operator_value
+                return field_value < operator_value
             elif operator == "$lte":
                 return (
-                    value[field] < operator_value or
-                    value[field] == operator_value
+                    field_value < operator_value or
+                    field_value == operator_value
                 )
             elif operator == "$gt":
-                return value[field] > operator_value
+                return field_value > operator_value
             elif operator == "$gte":
                 return (
-                    value[field] > operator_value or
-                    value[field] == operator_value
+                    field_value > operator_value or
+                    field_value == operator_value
                 )
             elif operator == "$nin":
-                return value[field] not in operator_value
+                return field_value not in operator_value
             elif operator == "$in":
-                return value[field] in operator_value
+                return field_value in operator_value

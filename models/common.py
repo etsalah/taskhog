@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """This module contains a definition of the basic fields that all the models in
 the system and the crud operation that can be performed on these models"""
+from sqlalchemy import Column, String, DateTime, ForeignKey
+from datetime import datetime
 from models.store import Store
 from typing import List, AnyStr, Dict
 from helpers import env_test
@@ -11,14 +13,18 @@ test_store = {}
 
 class CommonField:
     __tablename__ = ""
-    id = ''
-    created_by_id = ''
-    created_at = ''
-    deleted_at = ''
-    deleted_by_id = ''
-    updated_by_id = ''
-    updated_at = ''
-    ver = ''
+    id = Column(String(50), primary_key=True)
+    created_by_id = Column(
+        String(50), ForeignKey("users.id"), index=True, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), index=True, nullable=False,
+        default=datetime.now
+    )
+    deleted_at = Column(DateTime(timezone=True), index=True, nullable=True)
+    deleted_by_id = Column(String("users.id"), index=True, nullable=True)
+    updated_by_id = Column(String("users.id"), index=True, nullable=True)
+    updated_at = Column(DateTime(timezone=True), index=True, nullable=True)
+    ver = Column(String(50), nullable=False, index=True)
     is_test = env_test("TEST")
 
     COLUMNS = [
@@ -35,9 +41,14 @@ class CommonField:
 
     @staticmethod
     def sanitize_data(data):
+        tmp = {}
         if 'token' in data:
             del data['token']
-        return data
+
+        for column in CommonField.COLUMNS:
+            if column in data:
+                tmp[column] = data[column]
+        return tmp
 
     @staticmethod
     def append_columns(columns: List[AnyStr]):
@@ -73,10 +84,9 @@ class CommonField:
         if self.is_test:
             return delete(self.__tablename__, _id)
 
-    def count(self, params: Dict=None):
-        clean_data = CommonField.sanitize_data(params)
+    def count(self, params: List[Dict]=None):
         if self.is_test:
-            return count(self.__tablename__, clean_data)
+            return count(self.__tablename__, params)
 
 
 def get_db(store_name: AnyStr):

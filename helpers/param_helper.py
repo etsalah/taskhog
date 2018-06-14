@@ -20,7 +20,7 @@ def get_pagination_details(request_obj):
         'limit': int(params.get('limit', 20))
     }
 
-    for field in ('fields', 'sort'):
+    for field in ('filters', 'sort'):
         if field in params:
             result.update({field: params[field]})
 
