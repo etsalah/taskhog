@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from bottle import Bottle, response
-
+from sqlalchemy.orm import sessionmaker
 from helpers import route_helper
 from routes import board
 from routes import board_label
@@ -10,8 +10,13 @@ from routes import card
 from routes import card_label
 from routes import card_list
 from routes import user
-from helpers import env_test
+import config
 
+
+engine = config.create_engine_()
+SessionMaker = sessionmaker(bind=engine)
+
+session = SessionMaker()
 
 app = Bottle(__name__)
 
@@ -36,5 +41,6 @@ def index():
 
 
 if __name__ == '__main__':
-    DEBUG = env_test('DEVELOPMENT')
+    DEBUG = config.env_test('DEVELOPMENT')
+    config.create_db(engine)
     app.run(debug=DEBUG, port=9091)

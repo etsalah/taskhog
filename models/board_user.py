@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """This model defines the users that are attached to a particular board"""
 from sqlalchemy import Column, String, ForeignKey
-from models.common import CommonField
+from models.common import CommonField, Base
 
 
-class BoardUser(CommonField):
+class BoardUser(CommonField, Base):
     __tablename__ = "board_user"
     board_id = Column(
         String(50), ForeignKey("board.id"), index=True, nullable=False)

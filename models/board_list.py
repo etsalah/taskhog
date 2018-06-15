@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """This model defines"""
 from sqlalchemy import Column, String, ForeignKey, UnicodeText
-from models.common import CommonField
+from models.common import CommonField, Base
 
 
-class BoardList(CommonField):
+class BoardList(CommonField, Base):
     __tablename__ = "board_list"
     board_id = Column(
         String(50), ForeignKey("board.id"), index=True, nullable=False)

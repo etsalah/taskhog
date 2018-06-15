@@ -2,10 +2,10 @@
 """This model defines the details of the users that would be tracked in the
 application"""
 from sqlalchemy import Column, String
-from models.common import CommonField
+from models.common import CommonField, Base
 
 
-class User(CommonField):
+class User(CommonField, Base):
     __tablename__ = "users"
     username = Column(String(100), unique=True, index=True, nullable=False)
     email = Column(String(100), index=True, nullable=False)

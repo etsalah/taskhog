@@ -2,10 +2,10 @@
 """This model represents the labels that have been created for a particular
 board"""
 from sqlalchemy import Column, String, ForeignKey
-from models.common import CommonField
+from models.common import CommonField, Base
 
 
-class BoardLabel(CommonField):
+class BoardLabel(CommonField, Base):
     __tablename__ = "board_label"
     name = Column(String(200), nullable=False, index=True, unique=True)
     colour = Column(String(50), nullable=False, index=True)

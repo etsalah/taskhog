@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """This contains the model that represents the boards in the system"""
 from sqlalchemy import Column, String, UnicodeText
-from models.common import CommonField
+from models.common import CommonField, Base
 
 
-class Board(CommonField):
+class Board(CommonField, Base):
     __tablename__ = "board"
     name = Column(String(500), nullable=False, unique=True, index=True)
     description = Column(UnicodeText())

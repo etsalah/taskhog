@@ -4,27 +4,30 @@ the system and the crud operation that can be performed on these models"""
 from datetime import datetime
 from typing import List, AnyStr, Dict
 
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
 
-from helpers import env_test
+from config import env_test
 from helpers import id_helper
+from helpers import query_helper
 from models.store import Store
 
 test_store = {}
+
+Base = declarative_base()
 
 
 class CommonField:
     __tablename__ = ""
     id = Column(String(50), primary_key=True)
-    created_by_id = Column(
-        String(50), ForeignKey("users.id"), index=True, nullable=False)
     created_at = Column(
         DateTime(timezone=True), index=True, nullable=False,
         default=datetime.now
     )
     deleted_at = Column(DateTime(timezone=True), index=True, nullable=True)
-    deleted_by_id = Column(String("users.id"), index=True, nullable=True)
-    updated_by_id = Column(String("users.id"), index=True, nullable=True)
+    deleted_by_id = Column(String(50), index=True, nullable=True)
+    updated_by_id = Column(String(50), index=True, nullable=True)
     updated_at = Column(DateTime(timezone=True), index=True, nullable=True)
     ver = Column(String(50), nullable=False, index=True)
     is_test = env_test("TEST")
@@ -33,6 +36,14 @@ class CommonField:
         'id', 'created_by_id', 'created_at', 'deleted_at', 'deleted_by_id',
         'updated_by_id', 'updated_at', 'ver'
     ]
+
+    @classmethod
+    @declared_attr
+    def created_by_id(cls):
+        return cls.__table__.c.get(
+            "created_by_id", String(50), ForeignKey("users.id"),
+            index=True, nullable=False
+        )
 
     def dict(self):
         tmp = {}
@@ -56,90 +67,53 @@ class CommonField:
     def append_columns(columns: List[AnyStr]):
         CommonField.COLUMNS.extend(columns)
 
-    def save(self, data, session=None):
+    def save(self, session_obj, data):
         clean_data = CommonField.sanitize_data(data)
-        if self.is_test:
-            return save(self.__tablename__, clean_data)
-        else:
-            for field in CommonField.COLUMNS:
-                if field in data:
-                    setattr(self, field, data[field])
-            session.add(self)
-            return self.dict()
+        for field in CommonField.COLUMNS:
+            if field in clean_data:
+                setattr(self, field, clean_data[field])
+        session_obj.add(self)
+        return self.dict()
 
-    def update_by_id(self, _id, data, session=None):
-        clean_data = CommonField.sanitize_data(data)
-        if "ver" not in clean_data:
-            clean_data["ver"] = id_helper.generate_id()
+    def update_by_id(self, session_obj, _id, data):
+        return self.update_by_params(session_obj, [{"id": _id}], data)
 
-        if self.is_test:
-            return update_by_id(self.__tablename__, _id, clean_data)
-
-        else:
-            for field in CommonField.COLUMNS:
-                if field in data:
-                    setattr(self, field, data[field])
-            session.add(self)
-            return self.dict()
-
-    def update_by_params(self, params: List[Dict], data, session=None):
+    def update_by_params(self, session_obj, params: List[Dict], data):
         clean_data = CommonField.sanitize_data(data)
         if "ver" not in clean_data:
             clean_data["ver"] = id_helper.generate_id()
 
-        if self.is_test:
-            return update_by_params(self.__tablename__, params, clean_data)
-        else:
-            for field in CommonField.COLUMNS:
-                if field in data:
-                    setattr(self, field, data[field])
-            session.add(self)
-            return self.dict()
+        found_obj = self.find_by_params(session_obj, params)
+        for field in CommonField.COLUMNS:
+            if field in clean_data:
+                setattr(found_obj, field, data[field])
+        session_obj.add(found_obj)
+        return found_obj.dict()
 
-    def delete_by_id(self, _id, session=None):
-        if self.is_test:
-            return self.update_by_id(
-                _id,
-                {
-                    "deleted_at": datetime.utcnow()
-                },
-                session
-            )
-        else:
-            session.add(self)
-            return self.dict()
+    def delete_by_id(self, session_obj, _id):
+        return self.delete_by_params(session_obj, [{"id": _id}])
 
-    def delete_by_params(self, params: List[Dict], session=None):
-        if self.is_test:
-            return self.update_by_id(
-                params,
-                {
-                    "deleted": True,
-                    "deleted_at": datetime.utcnow()
-                },
-                session
-            )
-        else:
-            session.add(self)
-            return self.dict()
+    def delete_by_params(self, session_obj, params: List[Dict]):
+        return self.update_by_params(
+            session_obj, params,
+            [{"deleted": True, "deleted_at": datetime.now()}])
 
-    def find_by_id(self, _id):
-        if self.is_test:
-            return find_by_id(self.__tablename__, _id)
+    def find_by_id(self, session_obj, _id):
+        return self.find_by_params(session_obj, [{"id": _id}])
 
-    def find_by_params(self, params: List[Dict]):
-        if self.is_test:
-            return find_by_params(self.__tablename__, params)
+    def find_by_params(self, session_obj, params: List[Dict]):
+        result = self.list(session_obj, params, {"offset": 0, "limit": 1})
+        if result:
+            return result[0]
 
     def list(
-            self, params: List[Dict]=None,
-            pagination_args: Dict=None) -> List[Dict]:
-        if self.is_test:
-            return list_objects(self.__tablename__, params, pagination_args)
+            self, session_obj, params: List[Dict]=None,
+            pagination_args: Dict=None):
+        return query_helper.query(session_obj, self, params, pagination_args)
 
-    def count(self, params: List[Dict]=None):
-        if self.is_test:
-            return count(self.__tablename__, params)
+    def count(self, session_obj, params: List[Dict]=None):
+        # TODO: change this to use CommonFields.list
+        return self.list(session_obj, params, {}).count()
 
 
 def get_db(store_name: AnyStr):
