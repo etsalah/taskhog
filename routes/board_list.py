@@ -39,7 +39,7 @@ def find(board_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(board_list_id: str):
-    return json_dumps(BoardList().update(board_list_id, request.data))
+    return json_dumps(BoardList().update_by_id(board_list_id, request.data))
 
 
 @app.delete("/<board_list_id>")
@@ -48,7 +48,7 @@ def update(board_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(board_list_id: str):
-    return json_dumps(BoardList().delete(board_list_id))
+    return json_dumps(BoardList().delete_by_id(board_list_id))
 
 
 @app.post("/")

@@ -3,7 +3,8 @@ from typing import Dict, List, Tuple, Any
 from dateutil.parser import parse as parse_date
 
 SUPPORTED_QUERY_OPERATORS = (
-    '$ne', '$eq', '$in', '$nin', '$gt', '$gte', '$lt', '$lte')
+    '$ne', '$eq', '$in', '$nin', '$gt', '$gte', '$lt', '$lte'
+)
 
 
 class Store:
@@ -11,13 +12,26 @@ class Store:
     def __init__(self):
         self._store = []
 
+    @staticmethod
+    def to_dict(data: Dict) -> Dict:
+        tmp = {}
+        for field in data:
+            value = data[field]
+
+            if hasattr(value, "day") and hasattr(value, "fromtimestamp"):
+                value = str(value)
+
+            tmp[field] = value
+        return tmp
+
     def insert(self, obj):
         self._store.append(obj)
+        return Store.to_dict(obj)
 
     def delete(self, param_list: List[Dict]) -> List[Dict]:
         matched_items, unmatched_items = self._list(param_list)
         self._store = unmatched_items
-        return matched_items
+        return [Store.to_dict(matched_item) for matched_item in matched_items]
 
     def update(self, param_list: List[Dict], data: Dict) -> List[Dict]:
         tmp = []
@@ -36,19 +50,19 @@ class Store:
             tmp.append(item)
 
         self._store = tmp
-        return update_items
+        return [Store.to_dict(updated_item) for updated_item in update_items]
 
     def find_by_id(self, _id) -> Dict:
         result = self.list_objects(
             [{"id": {"$eq": _id}}], {"offset": 0, "limit": 1})
         if result:
-            return result[0]
+            return Store.to_dict(result[0])
         return {}
 
     def find_by_params(self, param_list: List[Dict]) -> Dict:
         result = self.list_objects(param_list, {"offset": 0, "limit": 1})
         if result:
-            return result[0]
+            return Store.to_dict(result[0])
         return {}
 
     def list_objects(
@@ -95,7 +109,13 @@ class Store:
             else:
                 unmatched_items.append(item)
 
-        return matched_items, unmatched_items
+        return (
+            [Store.to_dict(matched_item) for matched_item in matched_items],
+            [
+                Store.to_dict(unmatched_item)
+                for unmatched_item in unmatched_items
+            ]
+        )
 
     @staticmethod
     def _list_param_parser(param_list: List[Dict] = None):

@@ -47,7 +47,7 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(board_user_id: str):
-    return json_dumps(BoardUser().update(board_user_id, request.data))
+    return json_dumps(BoardUser().update_by_id(board_user_id, request.data))
 
 
 @app.delete("/<board_user_id>")
@@ -56,4 +56,4 @@ def update(board_user_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(board_user_id: str):
-    return json_dumps(BoardUser().delete(board_user_id))
+    return json_dumps(BoardUser().delete_by_id(board_user_id))

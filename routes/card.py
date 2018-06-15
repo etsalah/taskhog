@@ -46,7 +46,7 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(card_id: str):
-    return json_dumps(Card().update(card_id, request.data))
+    return json_dumps(Card().update_by_id(card_id, request.data))
 
 
 @app.delete("/<card_id>")
@@ -55,4 +55,4 @@ def update(card_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(card_id: str):
-    return json_dumps(Card().delete(card_id))
+    return json_dumps(Card().delete_by_id(card_id))

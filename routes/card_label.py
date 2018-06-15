@@ -47,7 +47,7 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(card_label_id: str):
-    return json_dumps(CardLabel().update(card_label_id, request.data))
+    return json_dumps(CardLabel().update_by_id(card_label_id, request.data))
 
 
 @app.delete("/<card_label_id>")
@@ -56,4 +56,4 @@ def update(card_label_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(card_label_id: str):
-    return json_dumps(CardLabel().delete(card_label_id))
+    return json_dumps(CardLabel().delete_by_id(card_label_id))

@@ -2,6 +2,8 @@
 """This module contains the endpoints for interacting with users in the
 application"""
 from copy import deepcopy
+from datetime import datetime
+
 from bottle import Bottle, request, response, json_dumps
 
 from helpers import exception_helper
@@ -66,7 +68,11 @@ def login():
 @exception_helper.handle_exception(response)
 @param_helper.handle_request_data(request)
 def signup():
-    result = User().save(request.data)
+    data = deepcopy(request.data)
+    data.update({
+        "created_at": datetime.utcnow()
+    })
+    result = User().save(data)
     return result
 
 
@@ -76,7 +82,12 @@ def signup():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(user_id):
-    return json_dumps(User().update(user_id, request.data))
+    data = deepcopy(request.data)
+    data.update({
+        "updated_by_id": request.user["id"],
+        "updated_at": datetime.now()
+    })
+    return json_dumps(User().update_by_id(user_id, data))
 
 
 @app.delete("/<user_id>")
@@ -85,7 +96,7 @@ def update(user_id):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(user_id):
-    return json_dumps(User().delete(user_id))
+    return json_dumps(User().delete_by_id(user_id))
 
 
 @app.get("/count")

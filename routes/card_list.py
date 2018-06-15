@@ -2,11 +2,11 @@
 """This module contains the endpoints for interacting with card lists in the
 application"""
 from bottle import Bottle, response, request, json_dumps
-from helpers import route_helper
-from helpers import jwt_helper
-from helpers import exception_helper
-from helpers import param_helper
 
+from helpers import exception_helper
+from helpers import jwt_helper
+from helpers import param_helper
+from helpers import route_helper
 from models.card_list import CardList
 
 app = Bottle(__name__)
@@ -47,7 +47,7 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(card_list_id: str):
-    return json_dumps(CardList().update(card_list_id, request.data))
+    return json_dumps(CardList().update_by_id(card_list_id, request.data))
 
 
 @app.delete("/<card_list_id>")
@@ -56,4 +56,4 @@ def update(card_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(card_list_id: str):
-    return json_dumps(CardList().delete(card_list_id))
+    return json_dumps(CardList().delete_by_id(card_list_id))
