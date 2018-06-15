@@ -12,6 +12,7 @@ from models.board_label import BoardLabel
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
 route_helper.handle_options_call(app)
+session = None
 
 
 @app.get("/")
@@ -21,7 +22,7 @@ route_helper.handle_options_call(app)
 def index():
     return json_dumps(
         BoardLabel().list(
-            request.pagination.get("filters", []), request.pagination))
+            session, request.pagination.get("filters", []), request.pagination))
 
 
 @app.get("/<board_label_id>")
@@ -30,7 +31,7 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(board_label_id: str):
-    return json_dumps(BoardLabel().find_by_id(board_label_id))
+    return json_dumps(BoardLabel().find_by_id(session, board_label_id))
 
 
 @app.post("/")
@@ -38,7 +39,7 @@ def find(board_label_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    return json_dumps(BoardLabel().save(request.data))
+    return json_dumps(BoardLabel().save(session, request.data))
 
 
 @app.put("/<board_label_id>")
@@ -47,7 +48,8 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(board_label_id: str):
-    return json_dumps(BoardLabel().update_by_id(board_label_id, request.data))
+    return json_dumps(
+        BoardLabel().update_by_id(session, board_label_id, request.data))
 
 
 @app.delete("/<board_label_id>")
@@ -56,4 +58,4 @@ def update(board_label_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(board_label_id: str):
-    return json_dumps(BoardLabel().delete_by_id(board_label_id))
+    return json_dumps(BoardLabel().delete_by_id(session, board_label_id))

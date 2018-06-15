@@ -12,6 +12,7 @@ from models.board_user import BoardUser
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
 route_helper.handle_options_call(app)
+session = None
 
 
 @app.get("/")
@@ -21,7 +22,7 @@ route_helper.handle_options_call(app)
 def index():
     return json_dumps(
         BoardUser().list(
-            request.pagination.get("filters", []), request.pagination))
+            session, request.pagination.get("filters", []), request.pagination))
 
 
 @app.get("/<board_user_id>")
@@ -30,7 +31,7 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(board_user_id: str):
-    return json_dumps(BoardUser().find_by_id(board_user_id))
+    return json_dumps(BoardUser().find_by_id(session, board_user_id))
 
 
 @app.post("/")
@@ -38,7 +39,7 @@ def find(board_user_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    return json_dumps(BoardUser().save(request.data))
+    return json_dumps(BoardUser().save(session, request.data))
 
 
 @app.put("/<board_user_id>")
@@ -47,7 +48,8 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(board_user_id: str):
-    return json_dumps(BoardUser().update_by_id(board_user_id, request.data))
+    return json_dumps(
+        BoardUser().update_by_id(session, board_user_id, request.data))
 
 
 @app.delete("/<board_user_id>")
@@ -56,4 +58,4 @@ def update(board_user_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(board_user_id: str):
-    return json_dumps(BoardUser().delete_by_id(board_user_id))
+    return json_dumps(BoardUser().delete_by_id(session, board_user_id))

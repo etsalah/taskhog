@@ -12,6 +12,7 @@ from models.card_list import CardList
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
 route_helper.handle_options_call(app)
+session = None
 
 
 @app.get("/")
@@ -21,7 +22,7 @@ route_helper.handle_options_call(app)
 def index():
     return json_dumps(
         CardList().list(
-            request.pagination.get("filters", []), request.pagination))
+            session, request.pagination.get("filters", []), request.pagination))
 
 
 @app.get("/<card_list_id>")
@@ -30,7 +31,8 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(card_list_id: str):
-    return json_dumps(CardList().find_by_id(card_list_id))
+    return json_dumps(CardList().find_by_id(
+        session, card_list_id))
 
 
 @app.post("/")
@@ -38,7 +40,7 @@ def find(card_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    return json_dumps(CardList().save(request.data))
+    return json_dumps(CardList().save(session, request.data))
 
 
 @app.put("/<card_list_id>")
@@ -47,7 +49,8 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(card_list_id: str):
-    return json_dumps(CardList().update_by_id(card_list_id, request.data))
+    return json_dumps(CardList().update_by_id(
+        session, card_list_id, request.data))
 
 
 @app.delete("/<card_list_id>")
@@ -56,4 +59,4 @@ def update(card_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(card_list_id: str):
-    return json_dumps(CardList().delete_by_id(card_list_id))
+    return json_dumps(CardList().delete_by_id(session, card_list_id))

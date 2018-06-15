@@ -15,6 +15,7 @@ from models.user import User
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
 route_helper.handle_options_call(app)
+session = None
 
 
 @app.get("/")
@@ -23,7 +24,8 @@ route_helper.handle_options_call(app)
 @param_helper.handle_request_data(request)
 def index():
     return json_dumps(
-        User().list(request.pagination.get("filters", []), request.pagination))
+        User().list(
+            session, request.pagination.get("filters", []), request.pagination))
 
 
 @app.get("/<user_id>")
@@ -32,7 +34,7 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(user_id):
-    return json_dumps(User().find_by_id(user_id))
+    return json_dumps(User().find_by_id(session, user_id))
 
 
 @app.post("/")
@@ -50,7 +52,7 @@ def login():
     if 'password' in params:
         find_args.append({'password': {"$eq": params['password']}})
 
-    result = User().find_by_params(find_args)
+    result = User().find_by_params(session, find_args)
     if result:
         result = deepcopy(result)
         if 'password' in result:
@@ -72,7 +74,7 @@ def signup():
     data.update({
         "created_at": datetime.utcnow()
     })
-    result = User().save(data)
+    result = User().save(session, data)
     return result
 
 
@@ -87,7 +89,7 @@ def update(user_id):
         "updated_by_id": request.user["id"],
         "updated_at": datetime.now()
     })
-    return json_dumps(User().update_by_id(user_id, data))
+    return json_dumps(User().update_by_id(session, user_id, data))
 
 
 @app.delete("/<user_id>")
@@ -96,7 +98,7 @@ def update(user_id):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(user_id):
-    return json_dumps(User().delete_by_id(user_id))
+    return json_dumps(User().delete_by_id(session, user_id))
 
 
 @app.get("/count")
@@ -105,7 +107,8 @@ def delete(user_id):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def count():
-    return json_dumps(User().count(request.pagination.get("filters", [])))
+    return json_dumps(User().count(
+        session, request.pagination.get("filters", [])))
 
 
 @app.get("/decode")

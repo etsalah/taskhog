@@ -10,6 +10,7 @@ from models.board_list import BoardList
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
 route_helper.handle_options_call(app)
+session = None
 
 
 @app.get("/")
@@ -19,7 +20,7 @@ route_helper.handle_options_call(app)
 def index():
     return json_dumps(
         BoardList().list(
-            request.pagination.get('filters', []), request.pagination
+            session, request.pagination.get('filters', []), request.pagination
         )
     )
 
@@ -30,7 +31,7 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(board_list_id: str):
-    return json_dumps(BoardList().find_by_id(board_list_id))
+    return json_dumps(BoardList().find_by_id(session, board_list_id))
 
 
 @app.put("/<board_list_id>")
@@ -39,7 +40,8 @@ def find(board_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(board_list_id: str):
-    return json_dumps(BoardList().update_by_id(board_list_id, request.data))
+    return json_dumps(
+        BoardList().update_by_id(session, board_list_id, request.data))
 
 
 @app.delete("/<board_list_id>")
@@ -48,7 +50,7 @@ def update(board_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(board_list_id: str):
-    return json_dumps(BoardList().delete_by_id(board_list_id))
+    return json_dumps(BoardList().delete_by_id(session, board_list_id))
 
 
 @app.post("/")
@@ -56,4 +58,4 @@ def delete(board_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    return json_dumps(BoardList().save(request.data))
+    return json_dumps(BoardList().save(session, request.data))
