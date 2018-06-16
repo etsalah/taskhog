@@ -86,30 +86,33 @@ def signup():
     return json_dumps(result)
 
 
-@app.put("/<user_id>")
-@app.put("/<user_id>/")
+@app.put("/<user_id>/<ver>")
+@app.put("/<user_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def update(user_id):
+def update(user_id: str, ver: str):
     data = deepcopy(request.data)
     data.update({
         "updated_by_id": request.user["id"],
         "updated_at": datetime.now()
     })
-    result = query_helper.update_by_id(
-        session, User, user_id, data, json_result=True)
+    result = query_helper.update_by_params(
+        session, User, [{"id": user_id}, {"ver": ver}], data, json_result=True)
     session.commit()
     return json_dumps(result)
 
 
-@app.delete("/<user_id>")
-@app.delete("/<user_id>/")
+@app.delete("/<user_id>/<ver>")
+@app.delete("/<user_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def delete(user_id):
-    result = query_helper.delete_by_id(session, User, user_id, json_result=True)
+def delete(user_id: str, ver: str):
+    result = query_helper.delete_by_params(
+        session, User, [{"id": user_id}, {"ver": ver}],
+        json_result=True
+    )
     session.commit()
     return json_dumps(result)
 
