@@ -39,7 +39,9 @@ def find(board_label_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    return json_dumps(BoardLabel().save(session, request.data))
+    result = BoardLabel().save(session, request.data)
+    session.commit()
+    return json_dumps(result)
 
 
 @app.put("/<board_label_id>")
@@ -48,8 +50,9 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(board_label_id: str):
-    return json_dumps(
-        BoardLabel().update_by_id(session, board_label_id, request.data))
+    result = BoardLabel().update_by_id(session, board_label_id, request.data)
+    session.commit()
+    return json_dumps(result)
 
 
 @app.delete("/<board_label_id>")
@@ -58,4 +61,6 @@ def update(board_label_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(board_label_id: str):
-    return json_dumps(BoardLabel().delete_by_id(session, board_label_id))
+    result = BoardLabel().delete_by_id(session, board_label_id)
+    session.commit()
+    return json_dumps(result)

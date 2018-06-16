@@ -39,7 +39,9 @@ def find(card_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    return json_dumps(Card().save(session, request.data))
+    result = Card().save(session, request.data)
+    session.commit()
+    return json_dumps(result)
 
 
 @app.put("/<card_id>")
@@ -48,7 +50,9 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(card_id: str):
-    return json_dumps(Card().update_by_id(session, card_id, request.data))
+    result = Card().update_by_id(session, card_id, request.data)
+    session.commit()
+    return json_dumps(result)
 
 
 @app.delete("/<card_id>")
@@ -57,4 +61,6 @@ def update(card_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(card_id: str):
-    return json_dumps(Card().delete_by_id(session, card_id))
+    result = Card().delete_by_id(session, card_id)
+    session.commit()
+    return json_dumps(result)

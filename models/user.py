@@ -1,16 +1,36 @@
 #!/usr/bin/env python
 """This model defines the details of the users that would be tracked in the
 application"""
-from sqlalchemy import Column, String
-from models.common import CommonField, Base
+from datetime import datetime
+from sqlalchemy import Column, String, DateTime
+from models.common import Base, model_dict
+from config import env_test
 
 
-class User(CommonField, Base):
+class User(Base):
     __tablename__ = "users"
     username = Column(String(100), unique=True, index=True, nullable=False)
     email = Column(String(100), index=True, nullable=False)
     password = Column(String(100), index=True, nullable=False)
+    id = Column(String(50), primary_key=True)
+    created_by_id = Column(
+        "created_by_id", String(50), index=True, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), index=True, nullable=False,
+        default=datetime.now
+    )
+    deleted_at = Column(DateTime(timezone=True), index=True, nullable=True)
+    deleted_by_id = Column(String(50), index=True, nullable=True)
+    updated_by_id = Column(String(50), index=True, nullable=True)
+    updated_at = Column(DateTime(timezone=True), index=True, nullable=True)
+    ver = Column(String(50), nullable=False, index=True)
+    is_test = env_test("TEST")
 
-    def __init__(self):
-        super(User, self).__init__()
-        User.append_columns(["username", "email", "password"])
+    COLUMNS = (
+        'username', 'email', 'password', 'id', 'created_by_id', 'created_at',
+        'deleted_at', 'deleted_by_id', 'updated_by_id', 'updated_at', 'ver',
+        'is_test'
+    )
+
+    def to_dict(self):
+        return model_dict(self)

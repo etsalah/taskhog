@@ -10,6 +10,7 @@ from helpers import exception_helper
 from helpers import jwt_helper
 from helpers import param_helper
 from helpers import route_helper
+from helpers import query_helper
 from models.user import User
 
 app = Bottle(__name__)
@@ -24,8 +25,11 @@ session = None
 @param_helper.handle_request_data(request)
 def index():
     return json_dumps(
-        User().list(
-            session, request.pagination.get("filters", []), request.pagination))
+        query_helper.list_query(
+            session, User, request.pagination.get("filters", []),
+            request.pagination, json_result=True
+        )
+    )
 
 
 @app.get("/<user_id>")
@@ -34,7 +38,8 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(user_id):
-    return json_dumps(User().find_by_id(session, user_id))
+    return json_dumps(
+        query_helper.find_by_id(session, User, user_id, json_result=True))
 
 
 @app.post("/")
@@ -52,9 +57,9 @@ def login():
     if 'password' in params:
         find_args.append({'password': {"$eq": params['password']}})
 
-    result = User().find_by_params(session, find_args)
+    result = query_helper.find_by_params(
+        session, User, find_args, json_result=True)
     if result:
-        result = deepcopy(result)
         if 'password' in result:
             del result['password']
 
@@ -72,10 +77,13 @@ def login():
 def signup():
     data = deepcopy(request.data)
     data.update({
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "created_by_id": "0"
     })
-    result = User().save(session, data)
-    return result
+    result = query_helper.save(session, User, data, json_result=True)
+    session.commit()
+    print(result)
+    return json_dumps(result)
 
 
 @app.put("/<user_id>")
@@ -89,7 +97,10 @@ def update(user_id):
         "updated_by_id": request.user["id"],
         "updated_at": datetime.now()
     })
-    return json_dumps(User().update_by_id(session, user_id, data))
+    result = query_helper.update_by_id(
+        session, User, user_id, data, json_result=True)
+    session.commit()
+    return json_dumps(result)
 
 
 @app.delete("/<user_id>")
@@ -98,7 +109,9 @@ def update(user_id):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(user_id):
-    return json_dumps(User().delete_by_id(session, user_id))
+    result = query_helper.delete_by_id(session, User, user_id, json_result=True)
+    session.commit()
+    return json_dumps(result)
 
 
 @app.get("/count")
@@ -107,8 +120,9 @@ def delete(user_id):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def count():
-    return json_dumps(User().count(
-        session, request.pagination.get("filters", [])))
+    return json_dumps(
+        query_helper.count(
+            session, User, request.pagination.get("filters", [])))
 
 
 @app.get("/decode")

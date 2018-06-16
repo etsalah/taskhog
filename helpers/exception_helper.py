@@ -61,6 +61,7 @@ def handle_exception(response_obj):
                 response_obj.status = 400
                 result = {'message': e.message}
             except Exception as e:
+                print(" => ", type(e))
                 response_obj.status = 500
                 result = {"message": str(e)}
             return result
