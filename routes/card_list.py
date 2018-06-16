@@ -7,6 +7,8 @@ from helpers import exception_helper
 from helpers import jwt_helper
 from helpers import param_helper
 from helpers import route_helper
+from helpers import query_helper
+
 from models.card_list import CardList
 
 app = Bottle(__name__)
@@ -21,8 +23,11 @@ session = None
 @param_helper.handle_request_data(request)
 def index():
     return json_dumps(
-        CardList().list(
-            session, request.pagination.get("filters", []), request.pagination))
+        query_helper.list_query(
+            session, CardList, request.pagination.get("filters", []),
+            request.pagination, json_result=True
+        )
+    )
 
 
 @app.get("/<card_list_id>")
@@ -31,8 +36,11 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(card_list_id: str):
-    return json_dumps(CardList().find_by_id(
-        session, card_list_id))
+    return json_dumps(
+        query_helper.find_by_id(
+            session, CardList, card_list_id, json_result=True
+        )
+    )
 
 
 @app.post("/")
@@ -40,28 +48,49 @@ def find(card_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    result = CardList().save(session, request.data)
+    result = query_helper.save(
+        session, CardList, request.data, json_result=True)
     session.commit()
     return json_dumps(result)
 
 
-@app.put("/<card_list_id>")
-@app.put("/<card_list_id>/")
+@app.put("/<card_list_id>/<ver>")
+@app.put("/<card_list_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def update(card_list_id: str):
-    result = CardList().update_by_id(session, card_list_id, request.data)
+def update(card_list_id: str, ver: str):
+    result = query_helper.update_by_params(
+        session, CardList, [{"id": card_list_id}, {"ver": ver}],
+        request.data, json_result=True
+    )
     session.commit()
     return json_dumps(result)
 
 
-@app.delete("/<card_list_id>")
-@app.delete("/<card_list_id>/")
+@app.delete("/<card_list_id>/<ver>")
+@app.delete("/<card_list_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def delete(card_list_id: str):
-    result = CardList().delete_by_id(session, card_list_id)
+def delete(card_list_id: str, ver: str):
+    result = query_helper.delete_by_params(
+        session, CardList,
+        [{"id": card_list_id}, {"ver": ver}],
+        json_result=True
+    )
     session.commit()
     return json_dumps(result)
+
+
+@app.get("/<card_list_id>")
+@app.get("/<card_list_id>/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
+def count():
+    return json_dumps(
+        query_helper.count(
+            session, CardList, request.paginations.get("filters", [])
+        )
+    )

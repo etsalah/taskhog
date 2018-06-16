@@ -4,6 +4,7 @@ from helpers import route_helper
 from helpers import param_helper
 from helpers import jwt_helper
 from helpers import exception_helper
+from helpers import query_helper
 
 from models.board_list import BoardList
 
@@ -19,8 +20,9 @@ session = None
 @param_helper.handle_request_data(request)
 def index():
     return json_dumps(
-        BoardList().list(
-            session, request.pagination.get('filters', []), request.pagination
+        query_helper.list_query(
+            session, BoardList, request.pagination.get('filters', []),
+            request.pagination, json_result=True
         )
     )
 
@@ -31,27 +33,37 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(board_list_id: str):
-    return json_dumps(BoardList().find_by_id(session, board_list_id))
+    return json_dumps(
+        query_helper.find_by_id(
+            session, BoardList, board_list_id, json_result=True
+        )
+    )
 
 
-@app.put("/<board_list_id>")
-@app.put("/<board_list_id>/")
+@app.put("/<board_list_id>/<ver>")
+@app.put("/<board_list_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def update(board_list_id: str):
-    result = BoardList().update_by_id(session, board_list_id, request.data)
+def update(board_list_id: str, ver: str):
+    result = query_helper.update_by_params(
+        session, BoardList, [{"id": board_list_id}, {"ver": ver}],
+        request.data, json_result=True
+    )
     session.commit()
     return json_dumps(result)
 
 
-@app.delete("/<board_list_id>")
-@app.delete("/<board_list_id>/")
+@app.delete("/<board_list_id>/<ver>")
+@app.delete("/<board_list_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def delete(board_list_id: str):
-    result = BoardList().delete_by_id(session, board_list_id)
+def delete(board_list_id: str, ver: str):
+    result = query_helper.delete_by_params(
+        session, BoardList, [{"id": board_list_id}, {"ver": ver}],
+        json_result=True
+    )
     session.commit()
     return json_dumps(result)
 
@@ -61,6 +73,22 @@ def delete(board_list_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    result = BoardList().save(session, request.data)
+    result = query_helper.save(
+        session, BoardList, request.data,
+        json_result=True
+    )
     session.commit()
     return json_dumps(result)
+
+
+@app.get("/count")
+@app.get("/count/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
+def count():
+    return json_dumps(
+        query_helper.count(
+            session, BoardList, request.pagination.get("filters", [])
+        )
+    )

@@ -6,6 +6,7 @@ from helpers import route_helper
 from helpers import jwt_helper
 from helpers import exception_helper
 from helpers import param_helper
+from helpers import query_helper
 
 from models.board_label import BoardLabel
 
@@ -21,8 +22,12 @@ session = None
 @param_helper.handle_request_data(request)
 def index():
     return json_dumps(
-        BoardLabel().list(
-            session, request.pagination.get("filters", []), request.pagination))
+        query_helper.list_query(
+            session, BoardLabel,
+            request.pagination.get("filters", []),
+            request.pagination, json_result=True
+        )
+    )
 
 
 @app.get("/<board_label_id>")
@@ -31,7 +36,9 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(board_label_id: str):
-    return json_dumps(BoardLabel().find_by_id(session, board_label_id))
+    return json_dumps(
+        query_helper.find_by_id(
+            session, BoardLabel, board_label_id, json_result=True))
 
 
 @app.post("/")
@@ -39,28 +46,50 @@ def find(board_label_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    result = BoardLabel().save(session, request.data)
+    result = query_helper.save(
+        session, BoardLabel, request.data, json_result=True)
     session.commit()
     return json_dumps(result)
 
 
-@app.put("/<board_label_id>")
-@app.put("/<board_label_id>/")
+@app.put("/<board_label_id>/<ver>")
+@app.put("/<board_label_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def update(board_label_id: str):
-    result = BoardLabel().update_by_id(session, board_label_id, request.data)
+def update(board_label_id: str, ver: str):
+    result = query_helper.update_by_params(
+        session, BoardLabel,
+        [{"id": board_label_id}, {"ver": ver}],
+        request.data, json_result=True
+    )
     session.commit()
     return json_dumps(result)
 
 
-@app.delete("/<board_label_id>")
-@app.delete("/<board_label_id>/")
+@app.delete("/<board_label_id>/<ver>")
+@app.delete("/<board_label_id>/<ver>/")
 @exception_helper.handle_exception(response)
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
-def delete(board_label_id: str):
-    result = BoardLabel().delete_by_id(session, board_label_id)
+def delete(board_label_id: str, ver: str):
+    result = query_helper.delete_by_params(
+        session, BoardLabel,
+        [{"id": board_label_id}, {"ver": ver}],
+        json_result=True
+    )
     session.commit()
     return json_dumps(result)
+
+
+@app.get("/count")
+@app.get("/count/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+def count():
+    return json_dumps(
+        query_helper.count(
+            session, BoardLabel,
+            request.pagination.get("filters", [])
+        )
+    )
