@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 import config
 from helpers import query_helper
 from helpers import route_helper
+from helpers import password_helper
 from models.user import User
 from routes import board
 from routes import board_label
@@ -59,7 +60,8 @@ def setup_admin_account(_id):
                 "id": _id,
                 "email": "super@gmail.com",
                 "username": "super",
-                "password": "password",
+                "password": password_helper.encrypt_password(
+                    str("password").strip()),
                 "created_by_id": _id,
                 "created_at": datetime.utcnow()
             }

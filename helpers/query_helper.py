@@ -3,6 +3,7 @@
 access the database"""
 from datetime import datetime
 from typing import Dict, List, TypeVar, Any
+from sqlalchemy.orm import exc as orm_exc
 
 from dateutil.parser import parse as parse_date
 from sqlalchemy import desc, asc
@@ -236,6 +237,9 @@ def save(session_obj: SessionType, model_cls, data, json_result=False):
     if "id" not in clean_data:
         setattr(obj, "id", id_helper.generate_id())
 
+    if 'created_at' not in clean_data:
+        setattr(obj, "created_at", datetime.now())
+
     setattr(obj, "ver", id_helper.generate_id())
     session_obj.add(obj)
     if not json_result:
@@ -294,7 +298,13 @@ def update_by_params(
     if "ver" not in clean_data:
         clean_data["ver"] = id_helper.generate_id()
 
+    if "updated_at" not in clean_data:
+        clean_data["updated_at"] = datetime.now()
+
     found_obj = find_by_params(session_obj, model_cls, params)
+    if not found_obj:
+        raise orm_exc.NoResultFound()
+
     for field in model_cls.COLUMNS:
         if field in clean_data:
             setattr(found_obj, field, clean_data[field])
@@ -305,7 +315,9 @@ def update_by_params(
     return found_obj.to_dict()
 
 
-def delete_by_id(session_obj: SessionType, model_cls, _id, json_result=False):
+def delete_by_id(
+        session_obj: SessionType, model_cls, _id, data: Dict = None,
+        json_result=False):
     """This function is used to update an instance of the class indicated by
     id in _id
 
@@ -314,6 +326,8 @@ def delete_by_id(session_obj: SessionType, model_cls, _id, json_result=False):
     session_obj -> object used to interact with the database
     model_cls -> class representing the model that needs to be updated
     _id -> id of the instance of the class that needs to be deleted
+    data (Dict) -> other data that needs to be set of the object after it has
+        been marked as deleted
     json_result (bool) -> indicates whether the deleted instance should be
         returned raw or converted to a dictionary
 
@@ -323,12 +337,13 @@ def delete_by_id(session_obj: SessionType, model_cls, _id, json_result=False):
     json_result's value
     """
     return delete_by_params(
-        session_obj, model_cls, [{"id": {"$eq": _id}}], json_result)
+        session_obj, model_cls, [{"id": {"$eq": _id}}], data,
+        json_result=json_result)
 
 
 def delete_by_params(
         session_obj: SessionType, model_cls, params: List[Dict],
-        json_result=False):
+        data: Dict = None, json_result=False):
     """This function is used to update an instance of the class indicated by
     parameters in the params argument
 
@@ -338,6 +353,8 @@ def delete_by_params(
     model_cls -> class representing the model that needs to be updated
     params (List[Dict]) -> parameters that can be used to identify the instance
         of the model to be deleted
+    data (Dict) -> other data that needs to be set of the object after it has
+        been marked as deleted
     json_result (bool) -> indicates whether the deleted instance should be
         returned raw or converted to a dictionary
 
@@ -346,9 +363,11 @@ def delete_by_params(
     returns raw instance or dictionary representing the raw instance based on
     json_result's value
     """
-    return update_by_params(
-        session_obj, model_cls, params,
-        {"deleted": True, "deleted_at": datetime.utcnow()}, json_result)
+    if not data:
+        data = {"deleted": True, "deleted_at": datetime.utcnow()}
+    else:
+        data.update({"deleted": True, "deleted_at": datetime.utcnow()})
+    return update_by_params(session_obj, model_cls, params, data, json_result)
 
 
 def find_by_id(session_obj: SessionType, model_cls, _id, json_result=False):

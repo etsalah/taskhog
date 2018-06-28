@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 """This module contains the endpoints for interacting with boards in the
 system"""
+from copy import deepcopy
+from datetime import datetime
+
 from bottle import Bottle, response, request, json_dumps
-from helpers import route_helper
-from helpers import jwt_helper
+
 from helpers import exception_helper
+from helpers import jwt_helper
+from helpers import model_helper
 from helpers import param_helper
 from helpers import query_helper
-
+from helpers import route_helper
 from models.board import Board
 
 app = Bottle(__name__)
@@ -21,12 +25,14 @@ session = None
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def index():
-    return json_dumps(
-        query_helper.list_query(
-            session, Board, request.pagination.get("filters", []),
-            request.pagination, json_result=True
-        )
+    session.rollback()
+    results = query_helper.list_query(
+        session, Board, request.pagination.get("filters", []),
+        request.pagination, json_result=True
     )
+    return json_dumps([
+        model_helper.insert_field_objects(session, row) for row in results
+    ])
 
 
 @app.get("/<board_id>")
@@ -35,8 +41,9 @@ def index():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def find(board_id: str):
-    return json_dumps(
-        query_helper.find_by_id(session, Board, board_id))
+    session.rollback()
+    result = query_helper.find_by_id(session, Board, board_id)
+    return json_dumps(model_helper.insert_field_objects(session, result))
 
 
 @app.post("/")
@@ -44,9 +51,13 @@ def find(board_id: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def create():
-    result = query_helper.save(session, Board, request.data, json_result=True)
+    session.rollback()
+    data = deepcopy(request.data)
+    data.update({
+        "created_by_id": request.user["id"], "created_at": datetime.now()})
+    result = query_helper.save(session, Board, data, json_result=True)
     session.commit()
-    return json_dumps(result)
+    return json_dumps(model_helper.insert_field_objects(session, result))
 
 
 @app.put("/<board_id>/<ver>")
@@ -55,10 +66,15 @@ def create():
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def update(board_id: str, ver: str):
-    result = Board().update_by_params(
-        session, [{"id": board_id}, {"ver": ver}], request.data)
+    session.rollback()
+    data = deepcopy(request.data)
+    data.update({"updated_by_id": request.user["id"]})
+    result = query_helper.update_by_params(
+        session, Board, [{"id": {"$eq": board_id}}, {"ver": {"$eq": ver}}],
+        data, json_result=True
+    )
     session.commit()
-    return json_dumps(result)
+    return json_dumps(model_helper.insert_field_objects(session, result))
 
 
 @app.delete("/<board_id>/<ver>")
@@ -67,10 +83,13 @@ def update(board_id: str, ver: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def delete(board_id: str, ver: str):
+    session.rollback()
     result = query_helper.delete_by_params(
-        session, Board, [{"id": board_id}, {"ver": ver}], json_result=True)
+        session, Board, [{"id": {"$eq": board_id}}, {"ver": {"$eq": ver}}],
+        data={"deleted_by_id": request.user["id"]}, json_result=True
+    )
     session.commit()
-    return json_dumps(result)
+    return json_dumps(model_helper.insert_field_objects(session, result))
 
 
 @app.get("/count")
@@ -79,6 +98,7 @@ def delete(board_id: str, ver: str):
 @jwt_helper.handle_token_decode(request)
 @param_helper.handle_request_data(request)
 def count():
+    session.rollback()
     return json_dumps(
         query_helper.count(
             session, Board,
