@@ -9,6 +9,7 @@ from helpers import jwt_helper
 from helpers import param_helper
 from helpers import route_helper
 from helpers import query_helper
+from helpers import log_helper
 from helpers import model_helper
 
 from models.card_list import CardList
@@ -55,6 +56,7 @@ def create():
     session.rollback()
     result = query_helper.save(
         session, CardList, request.data, json_result=True)
+    log_helper.log_insert(session, CardList, result["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -68,11 +70,17 @@ def update(card_list_id: str, ver: str):
     session.rollback()
     data = deepcopy(request.data)
     data.update({"updated_by_id": request.user["id"]})
+    old_data = query_helper.find_by_params(
+        session, CardList,
+        [{"id": {"$eq": card_list_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.update_by_params(
         session, CardList,
         [{"id": {"$eq": card_list_id}}, {"ver": {"$eq": ver}}],
         data, json_result=True
     )
+    log_helper.log_update(session, CardList, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -86,12 +94,18 @@ def delete(card_list_id: str, ver: str):
     session.rollback()
     data = deepcopy(request.data)
     data.update({"deleted_by_id": request.user["id"]})
+    old_data = query_helper.find_by_params(
+        session, CardList,
+        [{"id": {"$eq": card_list_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.delete_by_params(
         session, CardList,
         [{"id": {"$eq": card_list_id}}, {"ver": {"$eq": ver}}],
         data=data,
         json_result=True
     )
+    log_helper.log_update(session, CardList, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 

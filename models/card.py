@@ -34,3 +34,25 @@ class Card(Base):
 
     def to_dict(self):
         return model_dict(self)
+
+
+class CardLog(Base):
+    __tablename__ = "card_log"
+    id = Column(String(50), primary_key=True)
+    entity_id = Column(
+        String(50), ForeignKey("card.id"), nullable=False, index=True)
+    previous_state = Column(UnicodeText())
+    current_state = Column(UnicodeText())
+    created_by_id = Column(
+        String(50), ForeignKey("users.id"), index=True, nullable=False),
+    created_at = Column(
+        DateTime(timezone=True), index=True, nullable=False,
+        default=datetime.now
+    )
+    COLUMNS = (
+        'id', 'entity_id', 'previous_state', 'current_state', 'created_by_id',
+        'created_at'
+    )
+
+    def to_dict(self):
+        return model_dict(self)

@@ -2,7 +2,7 @@
 """This model represents the labels that have been created for a particular
 board"""
 from datetime import datetime
-from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, UnicodeText
 from models.common import Base, model_dict
 
 
@@ -29,6 +29,28 @@ class BoardLabel(Base):
         'id', 'created_by_id', 'created_at', 'deleted_at', 'deleted_by_id',
         'updated_by_id', 'updated_at', 'ver', 'name', 'colour', 'board_id'
     ]
+
+    def to_dict(self):
+        return model_dict(self)
+
+
+class BoardLabelLog(Base):
+    __tablename__ = "board_label_log"
+    id = Column(String(50), primary_key=True)
+    entity_id = Column(
+        String(50), ForeignKey("board_label.id"), nullable=False, index=True)
+    previous_state = Column(UnicodeText())
+    current_state = Column(UnicodeText())
+    created_by_id = Column(
+        String(50), ForeignKey("users.id"), index=True, nullable=False),
+    created_at = Column(
+        DateTime(timezone=True), index=True, nullable=False,
+        default=datetime.now
+    )
+    COLUMNS = (
+        'id', 'entity_id', 'previous_state', 'current_state', 'created_by_id',
+        'created_at'
+    )
 
     def to_dict(self):
         return model_dict(self)

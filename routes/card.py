@@ -7,6 +7,7 @@ from bottle import Bottle, response, request, json_dumps
 
 from helpers import exception_helper
 from helpers import jwt_helper
+from helpers import log_helper
 from helpers import model_helper
 from helpers import param_helper
 from helpers import query_helper
@@ -55,6 +56,7 @@ def create():
     data = deepcopy(request.data)
     data.update({"created_by_id": request.user["id"]})
     result = query_helper.save(session, Card, data, json_result=True)
+    log_helper.log_insert(session, Card, result["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -68,10 +70,15 @@ def update(card_id: str, ver: str):
     session.rollback()
     data = deepcopy(request.data)
     data.update({"updated_by_id": request.user["id"]})
+    old_data = query_helper.find_by_params(
+        session, Card,
+        [{"id": {"$eq": card_id}}, {"ver": {"$eq": ver}}], json_result=True
+    )
     result = query_helper.update_by_params(
         session, Card, [{"id": {"$eq": card_id}}, {"ver": {"$eq": ver}}],
         data
     )
+    log_helper.log_update(session, Card, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -85,10 +92,15 @@ def delete(card_id: str, ver: str):
     session.rollback()
     data = deepcopy(request.data)
     data.update({"deleted_by_id": request.user["id"]})
+    old_data = query_helper.find_by_params(
+        session, Card, [{"id": {"$eq": card_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.delete_by_params(
         session, Card, [{"id": {"$eq": card_id}}, {"ver": {"$eq": ver}}],
         data=data, json_result=True
     )
+    log_helper.log_update(session, Card, result["id"], result, old_data)
     session.commit()
     return json_dumps(result)
 

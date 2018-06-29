@@ -8,6 +8,7 @@ from bottle import Bottle, request, response, json_dumps
 
 from helpers import exception_helper
 from helpers import jwt_helper
+from helpers import log_helper
 from helpers import model_helper
 from helpers import param_helper
 from helpers import password_helper
@@ -86,6 +87,7 @@ def login():
 @app.post("/create/")
 @exception_helper.handle_exception(response)
 @param_helper.handle_request_data(request)
+@jwt_helper.handle_token_decode(request)
 def signup():
     session.rollback()
     data = deepcopy(request.data)
@@ -98,6 +100,7 @@ def signup():
             str(data['password']).strip())
 
     result = query_helper.save(session, User, data, json_result=True)
+    log_helper.log_insert(session, User, result["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -118,10 +121,16 @@ def update(user_id: str, ver: str):
     if 'password' in data:
         del data['password']
 
+    old_data = query_helper.find_by_params(
+        session, User, [{"id": {"$eq": user_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
+
     result = query_helper.update_by_params(
         session, User, [{"id": {"$eq": user_id}}, {"ver": {"$eq": ver}}],
         data, json_result=True
     )
+    log_helper.log_update(session, User, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -133,11 +142,16 @@ def update(user_id: str, ver: str):
 @param_helper.handle_request_data(request)
 def delete(user_id: str, ver: str):
     session.rollback()
+    old_data = query_helper.find_by_params(
+        session, User, [{"id": {"$eq": user_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.delete_by_params(
         session, User, [{"id": {"$eq": user_id}}, {"ver": {"$eq": ver}}],
         {'deleted_by_id': request.user['id']},
         json_result=True
     )
+    log_helper.log_update(session, User, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 

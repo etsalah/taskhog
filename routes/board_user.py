@@ -7,6 +7,7 @@ from bottle import Bottle, response, request, json_dumps
 
 from helpers import exception_helper
 from helpers import jwt_helper
+from helpers import log_helper
 from helpers import model_helper
 from helpers import param_helper
 from helpers import query_helper
@@ -57,6 +58,7 @@ def create():
     data.update({"created_by_id": request.user["id"]})
     result = query_helper.save(
         session, BoardUser, data, json_result=True)
+    log_helper.log_insert(session, BoardUser, result["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -70,10 +72,16 @@ def update(board_user_id: str, ver: str):
     session.rollback()
     data = deepcopy(request.data)
     data.update({"updated_by_id": request.user["id"]})
+    old_data = query_helper.find_by_params(
+        session, BoardUser,
+        [{"id": {"$eq": board_user_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.update_by_params(
         session, BoardUser,
         [{"id": {"$eq": board_user_id}}, {"ver": {"$eq": ver}}],
         data, json_result=True)
+    log_helper.log_update(session, BoardUser, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -87,12 +95,17 @@ def delete(board_user_id: str, ver: str):
     session.rollback()
     data = request.data
     data.update({"deleted_by_id": request.user["id"]})
-
+    old_data = query_helper.find_by_params(
+        session, BoardUser,
+        [{"id": {"$eq": board_user_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.delete_by_params(
         session, BoardUser,
         [{"id": {"$eq": board_user_id}}, {"ver": {"$eq": ver}}],
         data=data, json_result=True
     )
+    log_helper.log_update(session, BoardUser, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 

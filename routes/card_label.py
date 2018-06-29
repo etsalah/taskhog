@@ -2,14 +2,16 @@
 """This endpoint contains the endpoints for interacting with card labels in
 the system"""
 from copy import deepcopy
+
 from bottle import Bottle, response, request, json_dumps
-from helpers import route_helper
-from helpers import jwt_helper
+
 from helpers import exception_helper
+from helpers import jwt_helper
+from helpers import log_helper
+from helpers import model_helper
 from helpers import param_helper
 from helpers import query_helper
-from helpers import model_helper
-
+from helpers import route_helper
 from models.card_label import CardLabel
 
 app = Bottle(__name__)
@@ -57,6 +59,7 @@ def create():
     data = deepcopy(request.data)
     data.update({"created_by_id": request.user["id"]})
     result = query_helper.save(session, CardLabel, data, json_result=True)
+    log_helper.log_insert(session, CardLabel, result, result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -70,11 +73,17 @@ def update(card_label_id: str, ver: str):
     session.rollback()
     data = deepcopy(request.data)
     data.update({"updated_by_id": request.user["id"]})
+    old_data = query_helper.find_by_params(
+        session, CardLabel,
+        [{"id": {"$eq": card_label_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.update_by_params(
         session, CardLabel,
         [{"id": {"$eq": card_label_id}}, {"ver": {"$eq": ver}}], data,
         json_result=True
     )
+    log_helper.log_insert(session, CardLabel, result["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -88,11 +97,17 @@ def delete(card_label_id: str, ver: str):
     session.rollback()
     data = deepcopy(request.data)
     data.update({"deleted_by_id": request.user["id"]})
+    old_data = query_helper.find_by_params(
+        session, CardLabel,
+        [{"id": {"$eq": card_label_id}}, {"ver": {"$eq": ver}}],
+        json_result=True
+    )
     result = query_helper.delete_by_params(
         session, CardLabel,
         [{"id": {"$eq": card_label_id}}, {"ver": {"$eq": ver}}],
         data=data, json_result=True
     )
+    log_helper.log_update(session, CardLabel, result["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
