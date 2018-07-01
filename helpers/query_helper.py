@@ -67,6 +67,9 @@ def query(
         returns a list of instance of class passed in the model_cls param or
         list of dictionaries representing
     """
+    params = params if params else []
+    pagination_args = pagination_args if params else []
+
     record_set = session_obj.query(model_cls)
     for param in params:
         record_set = _apply_query_param(model_cls, record_set, param)
