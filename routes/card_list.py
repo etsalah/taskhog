@@ -12,7 +12,7 @@ from helpers import query_helper
 from helpers import log_helper
 from helpers import model_helper
 
-from models.card_list import CardList
+from models.card_list import CardList, CardListLog
 
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
@@ -56,7 +56,7 @@ def create():
     session.rollback()
     result = query_helper.save(
         session, CardList, request.data, json_result=True)
-    log_helper.log_insert(session, CardList, result["id"], result)
+    log_helper.log_insert(session, CardList, request.user["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -80,7 +80,8 @@ def update(card_list_id: str, ver: str):
         [{"id": {"$eq": card_list_id}}, {"ver": {"$eq": ver}}],
         data, json_result=True
     )
-    log_helper.log_update(session, CardList, result["id"], result, old_data)
+    log_helper.log_update(
+        session, CardList, request.user["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -105,7 +106,7 @@ def delete(card_list_id: str, ver: str):
         data=data,
         json_result=True
     )
-    log_helper.log_update(session, CardList, result["id"], result, old_data)
+    log_helper.log_update(session, CardList, request.user["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -120,5 +121,20 @@ def count():
     return json_dumps(
         query_helper.count(
             session, CardList, request.paginations.get("filters", [])
+        )
+    )
+
+
+@app.get("<card_list_id>/logs")
+@app.get("<card_list_id>/logs/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
+def log(card_list_id: str):
+    session.rollback()
+    return json_dumps(
+        query_helper.list_query(
+            session, CardListLog, [{"entity_id": {"$eq": card_list_id}}],
+            json_result=True
         )
     )

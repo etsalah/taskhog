@@ -13,7 +13,7 @@ from helpers import model_helper
 from helpers import param_helper
 from helpers import query_helper
 from helpers import route_helper
-from models.board import Board
+from models.board import Board, BoardLog
 
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
@@ -57,7 +57,7 @@ def create():
     data.update({
         "created_by_id": request.user["id"], "created_at": datetime.now()})
     result = query_helper.save(session, Board, data, json_result=True)
-    log_helper.log_insert(session, Board, result["id"], result)
+    log_helper.log_insert(session, Board, request.user["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -79,7 +79,7 @@ def update(board_id: str, ver: str):
         session, Board, [{"id": {"$eq": board_id}}, {"ver": {"$eq": ver}}],
         data, json_result=True
     )
-    log_helper.log_update(session, Board, result["id"], result, old_data)
+    log_helper.log_update(session, Board, request.user["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -99,7 +99,7 @@ def delete(board_id: str, ver: str):
         session, Board, [{"id": {"$eq": board_id}}, {"ver": {"$eq": ver}}],
         data={"deleted_by_id": request.user["id"]}, json_result=True
     )
-    log_helper.log_update(session, Board, result["id"], result, old_data)
+    log_helper.log_update(session, Board, request.user["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -115,5 +115,20 @@ def count():
         query_helper.count(
             session, Board,
             request.pagination.get("filters", [])
+        )
+    )
+
+
+@app.get("<board_id>/logs")
+@app.get("<board_id>/logs/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
+def log(board_id: str):
+    session.rollback()
+    return json_dumps(
+        query_helper.list_query(
+            session, BoardLog, [{"entity_id": {"$eq": board_id}}],
+            json_result=True
         )
     )

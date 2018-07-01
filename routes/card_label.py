@@ -12,7 +12,7 @@ from helpers import model_helper
 from helpers import param_helper
 from helpers import query_helper
 from helpers import route_helper
-from models.card_label import CardLabel
+from models.card_label import CardLabel, CardLabelLog
 
 app = Bottle(__name__)
 route_helper.enable_cor(app, response)
@@ -59,7 +59,7 @@ def create():
     data = deepcopy(request.data)
     data.update({"created_by_id": request.user["id"]})
     result = query_helper.save(session, CardLabel, data, json_result=True)
-    log_helper.log_insert(session, CardLabel, result, result)
+    log_helper.log_insert(session, CardLabel, request.user["id"], result)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -83,7 +83,8 @@ def update(card_label_id: str, ver: str):
         [{"id": {"$eq": card_label_id}}, {"ver": {"$eq": ver}}], data,
         json_result=True
     )
-    log_helper.log_insert(session, CardLabel, result["id"], result)
+    log_helper.log_update(
+        session, CardLabel, request.user["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -107,7 +108,8 @@ def delete(card_label_id: str, ver: str):
         [{"id": {"$eq": card_label_id}}, {"ver": {"$eq": ver}}],
         data=data, json_result=True
     )
-    log_helper.log_update(session, CardLabel, result["id"], result, old_data)
+    log_helper.log_update(
+        session, CardLabel, request.user["id"], result, old_data)
     session.commit()
     return json_dumps(model_helper.insert_field_objects(session, result))
 
@@ -122,5 +124,20 @@ def count():
     return json_dumps(
         query_helper.count(
             session, CardLabel, request.pagination.get("filters", [])
+        )
+    )
+
+
+@app.get("<card_label_id>/logs")
+@app.get("<card_label_id>/logs/")
+@exception_helper.handle_exception(response)
+@jwt_helper.handle_token_decode(request)
+@param_helper.handle_request_data(request)
+def log(card_label_id: str):
+    session.rollback()
+    return json_dumps(
+        query_helper.list_query(
+            session, CardLabelLog, [{"entity_id": {"$eq": card_label_id}}],
+            json_result=True
         )
     )

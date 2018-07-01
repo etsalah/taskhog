@@ -42,7 +42,7 @@ class CardListLog(Base):
     previous_state = Column(UnicodeText())
     current_state = Column(UnicodeText())
     created_by_id = Column(
-        String(50), ForeignKey("users.id"), index=True, nullable=False),
+        String(50), ForeignKey("users.id"), index=True, nullable=False)
     created_at = Column(
         DateTime(timezone=True), index=True, nullable=False,
         default=datetime.now
