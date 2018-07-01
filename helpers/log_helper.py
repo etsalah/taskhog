@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import json
 from typing import Dict
 from typing import TypeVar
 from sqlalchemy.orm import Session
@@ -28,28 +29,28 @@ LOG_CLASS_MAPPING = {
 
 
 def _log(
-        session: SessionType, model_cls, entity_id, current_state: Dict,
+        session: SessionType, model_cls, created_by_id, current_state: Dict,
         previous_state: Dict = None):
 
     log_cls = LOG_CLASS_MAPPING[model_cls]
     obj = log_cls(
-        id=id_helper.generate_id(), entity_id=entity_id,
-        current_state=str(current_state),
-        created_by_id=current_state["created_by_id"]
+        id=id_helper.generate_id(), entity_id=current_state["id"],
+        current_state=json.dumps(current_state),
+        created_by_id=created_by_id
     )
 
     if previous_state:
-        obj.previous_state = str(previous_state)
+        obj.previous_state = json.dumps(previous_state)
 
     session.add(obj)
 
 
 def log_insert(
-        session: SessionType, model_cls, entity_id, current_state: Dict):
-    _log(session, model_cls, entity_id, current_state)
+        session: SessionType, model_cls, created_by_id, current_state: Dict):
+    _log(session, model_cls, created_by_id, current_state)
 
 
 def log_update(
-        session: SessionType, model_cls, entity_id, current_state: Dict,
+        session: SessionType, model_cls, created_by_id, current_state: Dict,
         previous_state: Dict):
-    _log(session, model_cls, entity_id, current_state, previous_state)
+    _log(session, model_cls, created_by_id, current_state, previous_state)
