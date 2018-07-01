@@ -51,6 +51,6 @@ def log_insert(
 
 
 def log_update(
-        session: SessionType, model_cls, created_by_id, current_state: Dict,
+        session: SessionType, model_cls, updated_by_id, current_state: Dict,
         previous_state: Dict):
-    _log(session, model_cls, created_by_id, current_state, previous_state)
+    _log(session, model_cls, updated_by_id, current_state, previous_state)
